@@ -151,13 +151,18 @@
 }
 
 .things3-tags-input {
-	border: none;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
 	background: transparent;
 	font-size: 13px;
 	width: 120px;
-	padding: 2px 0;
+	padding: 4px 6px;
 	outline: none;
 	color: var(--text-muted);
+}
+
+.things3-tags-input:focus {
+	border-color: var(--interactive-accent);
 }
 
 .things3-tags-input::placeholder {
