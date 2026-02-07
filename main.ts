@@ -74,6 +74,8 @@ export class ThingsView extends ItemView {
 	intervalValue: NodeJS.Timer;
 	refreshTimer: NodeJS.Timer
 	plugin: ObsidianThings3
+	upcomingVisible: boolean = false;
+	upcomingData: string | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: ObsidianThings3) {
 		super(leaf);
@@ -139,6 +141,28 @@ export class ThingsView extends ItemView {
 			container.appendChild(node.children[1].children[0]);
 		}
 
+		// Toggle button for upcoming
+		const toggleBar = container.createEl("div", {cls: "things3-upcoming-toggle-bar"});
+		const toggleBtn = toggleBar.createEl("button", {
+			text: this.upcomingVisible ? "Hide Upcoming" : "Show Upcoming",
+			cls: "things3-btn",
+		});
+		toggleBtn.addEventListener("click", async () => {
+			this.upcomingVisible = !this.upcomingVisible;
+			if (this.upcomingVisible && !this.upcomingData) {
+				this.upcomingData = await this.getUpcomingListByJXA();
+			}
+			this.getAndShowTodayTodos();
+		});
+
+		// Upcoming section (conditionally rendered)
+		if (this.upcomingVisible) {
+			if (!this.upcomingData) {
+				this.upcomingData = await this.getUpcomingListByJXA();
+			}
+			this.renderUpcomingSection(container);
+		}
+
 		// Refresh icon at bottom
 		const bottomBar = container.createEl("div", {cls: "things3-bottom-refresh"});
 		const refreshBtn = bottomBar.createEl("button", {cls: "things3-refresh-icon"});
@@ -160,8 +184,78 @@ export class ThingsView extends ItemView {
 		this.refreshTodayView(3000)
 	}
 
+	renderUpcomingSection(container: Element) {
+		const section = container.createEl("div", {cls: "things3-upcoming-section"});
+
+		let todos: Array<{id: string; name: string; status: string; activationDate: string}> = [];
+		try {
+			todos = JSON.parse(this.upcomingData || "[]");
+		} catch {
+			todos = [];
+		}
+
+		if (todos.length === 0) {
+			section.createEl("div", {text: "No upcoming tasks", cls: "things3-upcoming-empty"});
+			return;
+		}
+
+		const grouped = this.groupByDate(todos);
+		grouped.forEach((tasks, dateKey) => {
+			const group = section.createEl("div", {cls: "things3-upcoming-group"});
+			const header = group.createEl("div", {cls: "things3-upcoming-header"});
+			const {dayNumber, label} = this.formatUpcomingDateHeader(dateKey);
+			header.createEl("span", {text: String(dayNumber), cls: "things3-upcoming-day-number"});
+			header.createEl("span", {text: label, cls: "things3-upcoming-day-label"});
+
+			tasks.forEach((t) => {
+				const row = group.createEl("div", {cls: "things-task-row"});
+				const checkbox = row.createEl("input", {type: "checkbox", cls: "things-today-checkbox"});
+				checkbox.setAttribute("tid", t.id);
+				if (t.status !== "open") {
+					checkbox.setAttribute("checked", "");
+				}
+				checkbox.addEventListener("click", this.handleCheckboxClick.bind(this));
+				const link = row.createEl("a", {text: t.name, href: `things:///show?id=${t.id}`});
+			});
+		});
+	}
+
+	formatUpcomingDateHeader(dateStr: string): {dayNumber: number; label: string} {
+		const date = new Date(dateStr + "T00:00:00");
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+		const dayNumber = date.getDate();
+		const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+		const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+		let label: string;
+		if (diffDays === 1) {
+			label = "Tomorrow";
+		} else if (diffDays > 1 && diffDays <= 7) {
+			label = weekdays[date.getDay()];
+		} else {
+			label = `${months[date.getMonth()]} ${weekdays[date.getDay()]}`;
+		}
+		return {dayNumber, label};
+	}
+
+	groupByDate(todos: Array<{id: string; name: string; status: string; activationDate: string}>): Map<string, Array<{id: string; name: string; status: string; activationDate: string}>> {
+		const map = new Map<string, Array<{id: string; name: string; status: string; activationDate: string}>>();
+		for (const t of todos) {
+			const key = new Date(t.activationDate).toLocaleDateString('en-CA');
+			if (!map.has(key)) {
+				map.set(key, []);
+			}
+			map.get(key)!.push(t);
+		}
+		// Sort by date key
+		return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+	}
+
 	refreshTodayView(delay?: number, notice = false) {
 		clearTimeout(this.refreshTimer)
+		this.upcomingData = null;
 
 		this.refreshTimer = setTimeout(() => {
 			this.getAndShowTodayTodos();
@@ -177,6 +271,16 @@ export class ThingsView extends ItemView {
 		return new Promise((resolve) => {
 			exec(`osascript -l JavaScript -e ` + getTodayListSct, (err, stdout, stderr) => {
 				resolve(stdout)
+			})
+		})
+	}
+
+	getUpcomingListByJXA(): Promise<string> {
+		const getUpcomingSct = `"function getUpcoming() { var now = new Date(); var limit = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 14); var results = []; Application('Things').lists.byId('TMUpcomingListSource').toDos().forEach(function(t) { var d = t.activationDate(); if (d && d <= limit) { var y = d.getFullYear(); var m = ('0' + (d.getMonth()+1)).slice(-2); var day = ('0' + d.getDate()).slice(-2); results.push({id: t.id(), name: t.name(), status: t.status(), activationDate: y+'-'+m+'-'+day}); } }); return JSON.stringify(results); }; getUpcoming();"`
+
+		return new Promise((resolve) => {
+			exec(`osascript -l JavaScript -e ` + getUpcomingSct, (err, stdout, stderr) => {
+				resolve(stdout.trim())
 			})
 		})
 	}

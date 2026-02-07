@@ -1,6 +1,6 @@
 {
 	"name": "things3-today-plus",
-	"version": "2.1.2",
+	"version": "2.2.0",
 	"description": "View and create tasks in Things 3's Today list from Obsidian",
 	"main": "main.js",
 	"scripts": {
