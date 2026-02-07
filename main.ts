@@ -131,7 +131,7 @@ export class ThingsView extends ItemView {
 			window.open("things:///show?id=today");
 		});
 
-		const addBtn = topButtons.createEl("button", {text: "Add To-Do", cls: "things3-btn things3-btn-primary"});
+		const addBtn = topButtons.createEl("button", {text: "Add To-Do", cls: "things3-btn"});
 		addBtn.addEventListener("click", () => {
 			new AddTaskModal(this.app, this).open();
 		});
@@ -146,9 +146,10 @@ export class ThingsView extends ItemView {
 			container.appendChild(node.children[1].children[0]);
 		}
 
-		// Refresh button at bottom
+		// Refresh icon at bottom
 		const bottomBar = container.createEl("div", {cls: "things3-bottom-refresh"});
-		const refreshBtn = bottomBar.createEl("button", {text: "Refresh", cls: "things3-btn things3-btn-subtle"});
+		const refreshBtn = bottomBar.createEl("button", {cls: "things3-refresh-icon"});
+		setIcon(refreshBtn, "refresh-cw");
 		refreshBtn.addEventListener("click", () => {
 			this.refreshTodayView(0, true)
 		});
