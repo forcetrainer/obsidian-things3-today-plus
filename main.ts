@@ -1,13 +1,15 @@
-import {exec} from 'child_process';
+import {exec, execFile} from 'child_process';
 import {
+	App,
 	ItemView,
+	Modal,
+	Setting,
 	WorkspaceLeaf,
 	Notice,
 	Plugin,
-	PluginManifest,
 } from 'obsidian';
 
-export const VIEW_TYPE_THINGS3 = "things3-today";
+export const VIEW_TYPE_THINGS3 = "things3-today-plus";
 
 export default class ObsidianThings3 extends Plugin {
 
@@ -21,9 +23,17 @@ export default class ObsidianThings3 extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'add-task-today',
+			name: 'Add Task to Today',
+			callback: () => {
+				new AddTaskModal(this.app, this.getThingsView()).open();
+			}
+		});
+
 		this.registerView(
 			VIEW_TYPE_THINGS3,
-			(leaf) => new ThingsView(leaf, this.manifest)
+			(leaf) => new ThingsView(leaf, this)
 		);
 
 		this.addRibbonIcon("check-square", "Open Things3 Today", () => {
@@ -32,6 +42,14 @@ export default class ObsidianThings3 extends Plugin {
 
         // trigger this on layout ready
 		this.app.workspace.onLayoutReady(this.activateThings3View.bind(this))
+	}
+
+	getThingsView(): ThingsView | null {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_THINGS3);
+		if (leaves.length > 0) {
+			return leaves[0].view as ThingsView;
+		}
+		return null;
 	}
 
 	async activateThings3View() {
@@ -51,14 +69,22 @@ export default class ObsidianThings3 extends Plugin {
 
 }
 
+function escapeJXA(str: string): string {
+	return str
+		.replace(/\\/g, '\\\\')
+		.replace(/'/g, "\\'")
+		.replace(/\n/g, '\\n')
+		.replace(/\r/g, '\\r');
+}
+
 export class ThingsView extends ItemView {
 	intervalValue: NodeJS.Timer;
 	refreshTimer: NodeJS.Timer
-	manifest: PluginManifest
+	plugin: ObsidianThings3
 
-	constructor(leaf: WorkspaceLeaf, manifest: PluginManifest) {
+	constructor(leaf: WorkspaceLeaf, plugin: ObsidianThings3) {
 		super(leaf);
-		this.manifest = manifest
+		this.plugin = plugin
 	}
 
 	getIcon(): string {
@@ -100,15 +126,19 @@ export class ThingsView extends ItemView {
 		container.createEl("br");
 		container.createEl("br");
 
-		const button = document.createElement("button")
-		button.innerText = "Refresh"
+		const buttonContainer = container.createEl("div", {
+			attr: {style: "display: flex; gap: 4px; margin-bottom: 8px;"}
+		});
 
-		button.addEventListener("click", () => {
-			// Notifications will only be displayed if the button is clicked.
+		const refreshBtn = buttonContainer.createEl("button", {text: "Refresh"});
+		refreshBtn.addEventListener("click", () => {
 			this.refreshTodayView(0, true)
-		})
+		});
 
-		container.appendChild(button)
+		const addBtn = buttonContainer.createEl("button", {text: "+"});
+		addBtn.addEventListener("click", () => {
+			new AddTaskModal(this.app, this).open();
+		});
 
 		// add click event
 		const inputCheckboxes = node.querySelectorAll('.things-today-checkbox');
@@ -164,5 +194,111 @@ export class ThingsView extends ItemView {
 				resolve(stdout)
 			})
 		})
+	}
+
+	addTodoByJXA(title: string, notes?: string, tags?: string): Promise<string> {
+		const safeName = escapeJXA(title);
+		const safeNotes = notes ? escapeJXA(notes) : '';
+		const safeTags = tags ? escapeJXA(tags) : '';
+
+		let propsStr = `name: '${safeName}'`;
+		if (notes) {
+			propsStr += `, notes: '${safeNotes}'`;
+		}
+		if (tags) {
+			propsStr += `, tagNames: '${safeTags}'`;
+		}
+
+		const script = `var things = Application('Things'); var todo = things.make({new: 'to do', withProperties: {${propsStr}}}); things.scheduleToDo(todo, {for: new Date()}); todo.name();`;
+
+		return new Promise((resolve, reject) => {
+			execFile('osascript', ['-l', 'JavaScript', '-e', script], (err, stdout, stderr) => {
+				if (err) {
+					reject(new Error(stderr || err.message));
+				} else {
+					resolve(stdout.trim());
+				}
+			})
+		})
+	}
+}
+
+class AddTaskModal extends Modal {
+	thingsView: ThingsView | null;
+
+	constructor(app: App, thingsView: ThingsView | null) {
+		super(app);
+		this.thingsView = thingsView;
+	}
+
+	onOpen() {
+		const {contentEl} = this;
+		contentEl.createEl("h3", {text: "Add Task to Today"});
+
+		let titleValue = '';
+		let notesValue = '';
+		let tagsValue = '';
+
+		new Setting(contentEl)
+			.setName("Title")
+			.addText((text) => {
+				text.setPlaceholder("Task title")
+					.onChange((value) => { titleValue = value; });
+				text.inputEl.id = 'things3-add-title';
+				// auto-focus after modal opens
+				setTimeout(() => text.inputEl.focus(), 10);
+			});
+
+		new Setting(contentEl)
+			.setName("Notes")
+			.addTextArea((textarea) => {
+				textarea.setPlaceholder("Optional notes")
+					.onChange((value) => { notesValue = value; });
+			});
+
+		new Setting(contentEl)
+			.setName("Tags")
+			.addText((text) => {
+				text.setPlaceholder("tag1, tag2")
+					.onChange((value) => { tagsValue = value; });
+			});
+
+		const submit = async () => {
+			if (!titleValue.trim()) {
+				new Notice("Title is required");
+				return;
+			}
+			try {
+				await this.thingsView?.addTodoByJXA(
+					titleValue.trim(),
+					notesValue.trim() || undefined,
+					tagsValue.trim() || undefined
+				);
+				new Notice("Task added to Today");
+				this.close();
+				this.thingsView?.refreshTodayView(1000);
+			} catch (e) {
+				new Notice("Failed to add task: " + (e as Error).message);
+			}
+		};
+
+		new Setting(contentEl)
+			.addButton((btn) => {
+				btn.setButtonText("Add Task")
+					.setCta()
+					.onClick(submit);
+			});
+
+		// Enter key submits from title/tags inputs
+		contentEl.addEventListener("keydown", (e: KeyboardEvent) => {
+			if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
+				e.preventDefault();
+				submit();
+			}
+		});
+	}
+
+	onClose() {
+		this.contentEl.empty();
 	}
 }

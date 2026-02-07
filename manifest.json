@@ -1,10 +1,10 @@
 {
-	"id": "things3-today",
-	"name": "Things3 Today",
-	"version": "1.0.1",
+	"id": "things3-today-plus",
+	"name": "Things3 Today Plus",
+	"version": "2.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Manage today's tasks with Things3",
-	"author": "wudanyang6",
-	"authorUrl": "https://wudanyang6.github.io/",
+	"description": "View and create tasks in Things3's Today list from Obsidian",
+	"author": "forcetrainer",
+	"authorUrl": "https://github.com/forcetrainer",
 	"isDesktopOnly": true
 }
