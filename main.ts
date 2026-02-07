@@ -36,7 +36,7 @@ export default class ObsidianThings3 extends Plugin {
 			(leaf) => new ThingsView(leaf, this)
 		);
 
-		this.addRibbonIcon("check-square", "Open Things3 Today", () => {
+		this.addRibbonIcon("check-square", "Things 3 Today Plus", () => {
 			this.activateThings3View();
 		});
 
@@ -97,7 +97,7 @@ export class ThingsView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Things3 Today";
+		return "Things · Today";
 	}
 
 	async onOpen() {
@@ -196,7 +196,7 @@ export class ThingsView extends ItemView {
 		})
 	}
 
-	addTodoByAppleScript(title: string, notes?: string, tags?: string): Promise<string> {
+	addTodoByAppleScript(title: string, notes?: string, tags?: string, completed?: boolean): Promise<string> {
 		const safeTitle = escapeAppleScript(title);
 		const safeNotes = notes ? escapeAppleScript(notes) : '';
 		const safeTags = tags ? escapeAppleScript(tags) : '';
@@ -207,6 +207,9 @@ export class ThingsView extends ItemView {
 		}
 		if (tags) {
 			propsStr += `, tag names:"${safeTags}"`;
+		}
+		if (completed) {
+			propsStr += `, status:completed`;
 		}
 
 		const script = `tell application "Things3" to make new to do with properties {${propsStr}} at beginning of list "Today"`;
@@ -235,10 +238,17 @@ class AddTaskModal extends Modal {
 		const {contentEl} = this;
 		contentEl.addClass('things3-add-modal');
 
-		// Title row: checkbox icon + input
+		// Title row: toggleable checkbox + input
+		let isCompleted = false;
 		const titleRow = contentEl.createEl("div", {cls: "things3-title-row"});
 		const checkbox = titleRow.createEl("div", {cls: "things3-checkbox-icon"});
 		setIcon(checkbox, "square");
+		checkbox.addEventListener("click", () => {
+			isCompleted = !isCompleted;
+			checkbox.empty();
+			setIcon(checkbox, isCompleted ? "check-square" : "square");
+			checkbox.toggleClass("things3-checkbox-checked", isCompleted);
+		});
 		const titleInput = titleRow.createEl("input", {
 			type: "text",
 			placeholder: "New To-Do",
@@ -282,7 +292,8 @@ class AddTaskModal extends Modal {
 				await this.thingsView?.addTodoByAppleScript(
 					title,
 					notesInput.value.trim() || undefined,
-					tagsInput.value.trim() || undefined
+					tagsInput.value.trim() || undefined,
+					isCompleted
 				);
 				new Notice("Task added to Today");
 				this.close();
