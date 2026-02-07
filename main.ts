@@ -121,6 +121,7 @@ export class ThingsView extends ItemView {
 		const node = doc.documentElement
 
 		container.empty();
+		container.createEl("h4", {text: "Things 3 Today"});
 
 		// Top buttons: Open Things + Add To-Do
 		const topButtons = container.createEl("div", {cls: "things3-top-buttons"});
