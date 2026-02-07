@@ -187,7 +187,7 @@ export class ThingsView extends ItemView {
 	renderUpcomingSection(container: Element) {
 		const section = container.createEl("div", {cls: "things3-upcoming-section"});
 
-		let todos: Array<{id: string; name: string; status: string; activationDate: string}> = [];
+		let todos: Array<{id: string; name: string; status: string; activationDate: string | null}> = [];
 		try {
 			todos = JSON.parse(this.upcomingData || "[]");
 		} catch {
@@ -204,7 +204,7 @@ export class ThingsView extends ItemView {
 			const group = section.createEl("div", {cls: "things3-upcoming-group"});
 			const header = group.createEl("div", {cls: "things3-upcoming-header"});
 			const {dayNumber, label} = this.formatUpcomingDateHeader(dateKey);
-			header.createEl("span", {text: String(dayNumber), cls: "things3-upcoming-day-number"});
+			header.createEl("span", {text: dayNumber, cls: "things3-upcoming-day-number"});
 			header.createEl("span", {text: label, cls: "things3-upcoming-day-label"});
 
 			tasks.forEach((t) => {
@@ -220,12 +220,15 @@ export class ThingsView extends ItemView {
 		});
 	}
 
-	formatUpcomingDateHeader(dateStr: string): {dayNumber: number; label: string} {
-		const date = new Date(dateStr + "T00:00:00");
+	formatUpcomingDateHeader(dateKey: string): {dayNumber: string; label: string} {
+		if (dateKey === "unscheduled") {
+			return {dayNumber: "—", label: "Scheduled"};
+		}
+		const date = new Date(dateKey + "T00:00:00");
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-		const dayNumber = date.getDate();
+		const dayNumber = String(date.getDate());
 		const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 		const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -240,17 +243,23 @@ export class ThingsView extends ItemView {
 		return {dayNumber, label};
 	}
 
-	groupByDate(todos: Array<{id: string; name: string; status: string; activationDate: string}>): Map<string, Array<{id: string; name: string; status: string; activationDate: string}>> {
-		const map = new Map<string, Array<{id: string; name: string; status: string; activationDate: string}>>();
+	groupByDate(todos: Array<{id: string; name: string; status: string; activationDate: string | null}>): Map<string, Array<{id: string; name: string; status: string; activationDate: string | null}>> {
+		const map = new Map<string, Array<{id: string; name: string; status: string; activationDate: string | null}>>();
 		for (const t of todos) {
-			const key = new Date(t.activationDate).toLocaleDateString('en-CA');
+			const key = t.activationDate
+				? new Date(t.activationDate + "T00:00:00").toLocaleDateString('en-CA')
+				: "unscheduled";
 			if (!map.has(key)) {
 				map.set(key, []);
 			}
 			map.get(key)!.push(t);
 		}
-		// Sort by date key
-		return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+		// Sort by date key, unscheduled last
+		return new Map([...map.entries()].sort((a, b) => {
+			if (a[0] === "unscheduled") return 1;
+			if (b[0] === "unscheduled") return -1;
+			return a[0].localeCompare(b[0]);
+		}));
 	}
 
 	refreshTodayView(delay?: number, notice = false) {
@@ -276,7 +285,7 @@ export class ThingsView extends ItemView {
 	}
 
 	getUpcomingListByJXA(): Promise<string> {
-		const getUpcomingSct = `"function getUpcoming() { var now = new Date(); var limit = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 14); var results = []; Application('Things').lists.byId('TMUpcomingListSource').toDos().forEach(function(t) { var d = t.activationDate(); if (d && d <= limit) { var y = d.getFullYear(); var m = ('0' + (d.getMonth()+1)).slice(-2); var day = ('0' + d.getDate()).slice(-2); results.push({id: t.id(), name: t.name(), status: t.status(), activationDate: y+'-'+m+'-'+day}); } }); return JSON.stringify(results); }; getUpcoming();"`
+		const getUpcomingSct = `"function getUpcoming() { var now = new Date(); var limit = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 14); var results = []; var lastDate = null; Application('Things').lists.byId('TMCalendarListSource').toDos().forEach(function(t) { var d = t.activationDate(); var ds = null; if (d) { if (d > limit) return; var y = d.getFullYear(); var m = ('0' + (d.getMonth()+1)).slice(-2); var day = ('0' + d.getDate()).slice(-2); ds = y+'-'+m+'-'+day; lastDate = ds; } else { ds = lastDate; } results.push({id: t.id(), name: t.name(), status: t.status(), activationDate: ds}); }); return JSON.stringify(results); }; getUpcoming();"`
 
 		return new Promise((resolve) => {
 			exec(`osascript -l JavaScript -e ` + getUpcomingSct, (err, stdout, stderr) => {
