@@ -96,6 +96,58 @@
 	color: var(--text-faint);
 }
 
+.things3-when-row {
+	margin-bottom: 8px;
+}
+
+.things3-when-btns {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 6px;
+}
+
+.things3-when-btn {
+	font-size: 12px;
+	padding: 3px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+}
+
+.things3-when-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.things3-when-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.things3-when-active:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.things3-date-input {
+	font-size: 13px;
+	padding: 4px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: transparent;
+	color: var(--text-normal);
+}
+
+.things3-date-input:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.things3-date-hidden {
+	display: none;
+}
+
 .things3-notes-input {
 	border: none;
 	background: transparent;
@@ -119,18 +171,6 @@
 	border-top: 1px solid var(--background-modifier-border);
 	padding-top: 10px;
 	margin-top: 4px;
-}
-
-.things3-today-label {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-}
-
-.things3-today-text {
-	font-size: 13px;
-	font-weight: 500;
-	color: var(--text-accent);
 }
 
 .things3-tags-row {
