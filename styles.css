@@ -106,3 +106,19 @@
 .things3-tags-input::placeholder {
 	color: var(--text-faint);
 }
+
+.things3-submit-btn {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+	padding: 4px 14px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.things3-submit-btn:hover {
+	background: var(--interactive-accent-hover);
+}

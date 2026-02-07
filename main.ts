@@ -264,6 +264,12 @@ class AddTaskModal extends Modal {
 			cls: "things3-tags-input",
 		});
 
+		// Submit button
+		const submitBtn = bottomBar.createEl("button", {
+			text: "Save",
+			cls: "things3-submit-btn",
+		});
+
 		setTimeout(() => titleInput.focus(), 10);
 
 		const submit = async () => {
@@ -285,6 +291,8 @@ class AddTaskModal extends Modal {
 				new Notice("Failed to add task: " + (e as Error).message);
 			}
 		};
+
+		submitBtn.addEventListener("click", submit);
 
 		contentEl.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
