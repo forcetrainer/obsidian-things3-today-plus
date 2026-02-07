@@ -69,10 +69,10 @@ export default class ObsidianThings3 extends Plugin {
 
 }
 
-function escapeJXA(str: string): string {
+function escapeAppleScript(str: string): string {
 	return str
 		.replace(/\\/g, '\\\\')
-		.replace(/'/g, "\\'")
+		.replace(/"/g, '\\"')
 		.replace(/\n/g, '\\n')
 		.replace(/\r/g, '\\r');
 }
@@ -196,23 +196,23 @@ export class ThingsView extends ItemView {
 		})
 	}
 
-	addTodoByJXA(title: string, notes?: string, tags?: string): Promise<string> {
-		const safeName = escapeJXA(title);
-		const safeNotes = notes ? escapeJXA(notes) : '';
-		const safeTags = tags ? escapeJXA(tags) : '';
+	addTodoByAppleScript(title: string, notes?: string, tags?: string): Promise<string> {
+		const safeTitle = escapeAppleScript(title);
+		const safeNotes = notes ? escapeAppleScript(notes) : '';
+		const safeTags = tags ? escapeAppleScript(tags) : '';
 
-		let propsStr = `name: '${safeName}'`;
+		let propsStr = `name:"${safeTitle}"`;
 		if (notes) {
-			propsStr += `, notes: '${safeNotes}'`;
+			propsStr += `, notes:"${safeNotes}"`;
 		}
 		if (tags) {
-			propsStr += `, tagNames: '${safeTags}'`;
+			propsStr += `, tag names:"${safeTags}"`;
 		}
 
-		const script = `var things = Application('Things'); var todo = things.make({new: 'to do', withProperties: {${propsStr}}}); things.scheduleToDo(todo, {for: new Date()}); todo.name();`;
+		const script = `tell application "Things3" to make new to do with properties {${propsStr}} at beginning of list "Today"`;
 
 		return new Promise((resolve, reject) => {
-			execFile('osascript', ['-l', 'JavaScript', '-e', script], (err, stdout, stderr) => {
+			execFile('osascript', ['-e', script], (err, stdout, stderr) => {
 				if (err) {
 					reject(new Error(stderr || err.message));
 				} else {
@@ -269,7 +269,7 @@ class AddTaskModal extends Modal {
 				return;
 			}
 			try {
-				await this.thingsView?.addTodoByJXA(
+				await this.thingsView?.addTodoByAppleScript(
 					titleValue.trim(),
 					notesValue.trim() || undefined,
 					tagsValue.trim() || undefined
