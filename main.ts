@@ -198,7 +198,7 @@ export class ThingsView extends ItemView {
 		if (notes) params.set('notes', notes);
 		if (tags) params.set('tags', tags);
 
-		const url = `things:///add?${params.toString()}`;
+		const url = `things:///add?${params.toString().replace(/\+/g, '%20')}`;
 
 		return new Promise((resolve, reject) => {
 			execFile('open', ['-g', url], (err) => {
