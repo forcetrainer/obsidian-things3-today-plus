@@ -121,36 +121,36 @@ export class ThingsView extends ItemView {
 		const node = doc.documentElement
 
 		container.empty();
-		container.createEl("h4", {text: "Things 3 Today"});
-		container.createEl("a", {href: "things:///show?id=today", text: "Open Today"});
-		container.createEl("br");
-		container.createEl("br");
 
-		const buttonContainer = container.createEl("div", {
-			attr: {style: "display: flex; gap: 4px; margin-bottom: 8px;"}
+		// Top buttons: Open Things + Add To-Do
+		const topButtons = container.createEl("div", {cls: "things3-top-buttons"});
+
+		const openBtn = topButtons.createEl("button", {text: "Open Things", cls: "things3-btn"});
+		openBtn.addEventListener("click", () => {
+			window.open("things:///show?id=today");
 		});
 
-		const refreshBtn = buttonContainer.createEl("button", {text: "Refresh"});
-		refreshBtn.addEventListener("click", () => {
-			this.refreshTodayView(0, true)
-		});
-
-		const addBtn = buttonContainer.createEl("button", {text: "+"});
+		const addBtn = topButtons.createEl("button", {text: "Add To-Do", cls: "things3-btn things3-btn-primary"});
 		addBtn.addEventListener("click", () => {
 			new AddTaskModal(this.app, this).open();
 		});
 
-		// add click event
+		// Task list
 		const inputCheckboxes = node.querySelectorAll('.things-today-checkbox');
 		inputCheckboxes.forEach((checkbox) => {
-			// console.log(checkbox)
 			checkbox.addEventListener('click', this.handleCheckboxClick.bind(this));
 		});
 
-		// append body > subEle into container
 		while (node.children[1].children.length > 0) {
 			container.appendChild(node.children[1].children[0]);
 		}
+
+		// Refresh button at bottom
+		const bottomBar = container.createEl("div", {cls: "things3-bottom-refresh"});
+		const refreshBtn = bottomBar.createEl("button", {text: "Refresh", cls: "things3-btn things3-btn-subtle"});
+		refreshBtn.addEventListener("click", () => {
+			this.refreshTodayView(0, true)
+		});
 	}
 
 	async handleCheckboxClick(event: MouseEvent) {

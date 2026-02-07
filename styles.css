@@ -1,3 +1,54 @@
+/* Buttons */
+.things3-top-buttons {
+	display: flex;
+	gap: 6px;
+	margin-bottom: 12px;
+}
+
+.things3-btn {
+	font-size: 13px;
+	padding: 4px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.things3-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.things3-btn-primary {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.things3-btn-primary:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.things3-btn-subtle {
+	background: transparent;
+	border-color: transparent;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.things3-btn-subtle:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.things3-bottom-refresh {
+	display: flex;
+	justify-content: center;
+	margin-top: 12px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
 /* Task list */
 .things-task-row {
 	display: flex;
