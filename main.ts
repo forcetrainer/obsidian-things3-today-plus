@@ -121,7 +121,7 @@ export class ThingsView extends ItemView {
 		const node = doc.documentElement
 
 		container.empty();
-		container.createEl("h4", {text: "Things3 Today"});
+		container.createEl("h4", {text: "Things 3 Today"});
 		container.createEl("a", {href: "things:///show?id=today", text: "Open Today"});
 		container.createEl("br");
 		container.createEl("br");
