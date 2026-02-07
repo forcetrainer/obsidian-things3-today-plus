@@ -149,15 +149,21 @@
 }
 
 .things3-notes-input {
-	border: none;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
 	background: transparent;
 	font-size: 13px;
 	width: 100%;
 	min-height: 40px;
-	padding: 4px 0 12px 0;
+	padding: 6px 8px;
 	outline: none;
-	resize: none;
+	resize: vertical;
 	color: var(--text-muted);
+	box-sizing: border-box;
+}
+
+.things3-notes-input:focus {
+	border-color: var(--interactive-accent);
 }
 
 .things3-notes-input::placeholder {
