@@ -3,7 +3,7 @@ import {
 	App,
 	ItemView,
 	Modal,
-	Setting,
+	setIcon,
 	WorkspaceLeaf,
 	Notice,
 	Plugin,
@@ -233,46 +233,50 @@ class AddTaskModal extends Modal {
 
 	onOpen() {
 		const {contentEl} = this;
-		contentEl.createEl("h3", {text: "Add Task to Today"});
+		contentEl.addClass('things3-add-modal');
 
-		let titleValue = '';
-		let notesValue = '';
-		let tagsValue = '';
+		// Title row: checkbox icon + input
+		const titleRow = contentEl.createEl("div", {cls: "things3-title-row"});
+		const checkbox = titleRow.createEl("div", {cls: "things3-checkbox-icon"});
+		setIcon(checkbox, "square");
+		const titleInput = titleRow.createEl("input", {
+			type: "text",
+			placeholder: "New To-Do",
+			cls: "things3-title-input",
+		});
 
-		new Setting(contentEl)
-			.setName("Title")
-			.addText((text) => {
-				text.setPlaceholder("Task title")
-					.onChange((value) => { titleValue = value; });
-				text.inputEl.id = 'things3-add-title';
-				// auto-focus after modal opens
-				setTimeout(() => text.inputEl.focus(), 10);
-			});
+		// Notes textarea
+		const notesInput = contentEl.createEl("textarea", {
+			placeholder: "Notes",
+			cls: "things3-notes-input",
+		});
 
-		new Setting(contentEl)
-			.setName("Notes")
-			.addTextArea((textarea) => {
-				textarea.setPlaceholder("Optional notes")
-					.onChange((value) => { notesValue = value; });
-			});
+		// Bottom bar: Today label + tags input
+		const bottomBar = contentEl.createEl("div", {cls: "things3-bottom-bar"});
+		const todayLabel = bottomBar.createEl("div", {cls: "things3-today-label"});
+		todayLabel.createEl("span", {text: "Today", cls: "things3-today-text"});
+		const tagsRow = bottomBar.createEl("div", {cls: "things3-tags-row"});
+		const tagIcon = tagsRow.createEl("div", {cls: "things3-tag-icon"});
+		setIcon(tagIcon, "tag");
+		const tagsInput = tagsRow.createEl("input", {
+			type: "text",
+			placeholder: "Tags",
+			cls: "things3-tags-input",
+		});
 
-		new Setting(contentEl)
-			.setName("Tags")
-			.addText((text) => {
-				text.setPlaceholder("tag1, tag2")
-					.onChange((value) => { tagsValue = value; });
-			});
+		setTimeout(() => titleInput.focus(), 10);
 
 		const submit = async () => {
-			if (!titleValue.trim()) {
+			const title = titleInput.value.trim();
+			if (!title) {
 				new Notice("Title is required");
 				return;
 			}
 			try {
 				await this.thingsView?.addTodoByAppleScript(
-					titleValue.trim(),
-					notesValue.trim() || undefined,
-					tagsValue.trim() || undefined
+					title,
+					notesInput.value.trim() || undefined,
+					tagsInput.value.trim() || undefined
 				);
 				new Notice("Task added to Today");
 				this.close();
@@ -282,14 +286,6 @@ class AddTaskModal extends Modal {
 			}
 		};
 
-		new Setting(contentEl)
-			.addButton((btn) => {
-				btn.setButtonText("Add Task")
-					.setCta()
-					.onClick(submit);
-			});
-
-		// Enter key submits from title/tags inputs
 		contentEl.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (e.key === "Enter" && !(e.target instanceof HTMLTextAreaElement)) {
 				e.preventDefault();
